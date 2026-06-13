@@ -161,6 +161,7 @@ COMPILE_GD="no"
 COMPILE_FFI="no"
 
 PM_VERSION_MAJOR=""
+FD_SETSIZE="1024"
 
 DOWNLOAD_INSECURE="no"
 DOWNLOAD_CACHE="$DIR/download_cache"
@@ -168,7 +169,7 @@ SEPARATE_SYMBOLS="no"
 
 PHP_VERSION_BASE="auto"
 
-while getopts "::t:j:sdDFxfgnva:P:c:l:Jiz:" OPTION; do
+while getopts "::t:j:sdDFxfgnva:P:w:c:l:Jiz:" OPTION; do
 
 	case $OPTION in
 		l)
@@ -238,6 +239,12 @@ while getopts "::t:j:sdDFxfgnva:P:c:l:Jiz:" OPTION; do
 			;;
 		P)
 			PM_VERSION_MAJOR="$OPTARG"
+			;;
+		w)
+		    write_out "opt" "Change FD setsize limit to $OPTARG"
+			CFLAGS="$CFLAGS -DFD_SETSIZE=$OPTARG"
+			CXXFLAGS="$CXXFLAGS -DFD_SETSIZE=$OPTARG"
+			FD_SETSIZE="$OPTARG"
 			;;
 		J)
 			write_out "opt" "Compiling JIT support in OPcache (unstable)"
