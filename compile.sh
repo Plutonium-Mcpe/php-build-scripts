@@ -1221,9 +1221,9 @@ function build_libzip {
 
 function build_sqlite3 {
 	if [ "$DO_STATIC" == "yes" ]; then
-		local EXTRA_FLAGS="--enable-static=yes --enable-shared=no"
+		local EXTRA_FLAGS="--disable-shared"
 	else
-		local EXTRA_FLAGS="--enable-static=no --enable-shared=yes"
+		local EXTRA_FLAGS="--disable-static"
 	fi
 
 	write_library sqlite3 "$SQLITE3_VERSION"
