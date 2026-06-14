@@ -31,7 +31,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install make autoconf automake libtool libtool-bin m4 wget libc-bin gzip bzip2 bison g++ git re2c libpsl
+          sudo apt-get install make autoconf automake libtool libtool-bin m4 wget libc-bin gzip bzip2 bison g++ git re2c libpsl-dev
 
       - name: Prepare compile.sh download cache
         id: download-cache
