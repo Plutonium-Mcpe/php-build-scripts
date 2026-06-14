@@ -312,7 +312,7 @@ done
 
 if [ "$PHP_VERSION" == "" ]; then
 	write_error "Unsupported PHP base version $PHP_VERSION_BASE"
-	write_error "Example inputs: 8.2, 8.3"
+	write_error "Example inputs: 8.2, 8.3, 8.3"
 	exit 1
 fi
 
