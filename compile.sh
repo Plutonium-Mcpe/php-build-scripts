@@ -1,42 +1,44 @@
 #!/usr/bin/env bash
-PHP_VERSIONS=("8.2.27" "8.3.15")
+PHP_VERSIONS=("8.2.27" "8.3.15" "8.4.16")
 
 #### NOTE: Tags with "v" prefixes behave weirdly in the GitHub API. They'll be stripped in some places but not others.
 #### Use commit hashes to avoid this.
 
 ZLIB_VERSION="1.3.1"
 GMP_VERSION="6.3.0"
-CURL_VERSION="curl-8_9_1"
+
+CURL_VERSION="curl-8_13_0"
+
 YAML_VERSION="0.2.5"
 LEVELDB_VERSION="1c7564468b41610da4f498430e795ca4de0931ff" #release not tagged
-LIBXML_VERSION="2.10.1" #2.10.2 requires automake 1.16.3, which isn't easily available on Ubuntu 20.04
-LIBPNG_VERSION="1.6.43"
+LIBXML_VERSION="2.15.1"
+LIBPNG_VERSION="1.6.53"
 LIBJPEG_VERSION="9f"
-OPENSSL_VERSION="3.4.0"
-LIBZIP_VERSION="1.10.1"
-SQLITE3_VERSION="3450200" #3.45.2
-LIBDEFLATE_VERSION="78051988f96dc8d8916310d8b24021f01bd9e102" #1.23 - see above note about "v" prefixes
-LIBRDKAFKA_VER="2.1.1"
+OPENSSL_VERSION="3.6.0"
+LIBZIP_VERSION="1.11.4"
+SQLITE3_VERSION="3510100" #3.51.1
+LIBDEFLATE_VERSION="c8c56a20f8f621e6a966b716b31f1dedab6a41e3" #1.25 - see above note about "v" prefixes
+
 LIBZSTD_VER="1.5.6"
 LIBGRPC_VER="1.58.1"
 LIBSNAPPY_VER="1.2.1"
 SASL2_VERSION="2.1.28"
 
-EXT_PMMPTHREAD_VERSION="6.1.0"
-EXT_YAML_VERSION="2.2.4"
-EXT_LEVELDB_VERSION="317fdcd8415e1566fc2835ce2bdb8e19b890f9f3" #release not tagged
+EXT_PMMPTHREAD_VERSION="6.3.0"
+EXT_YAML_VERSION="2.3.0"
+EXT_LEVELDB_VERSION="88071eb1b1eae96af043229104b9d813f7cbe40c" #release not tagged
 EXT_CHUNKUTILS2_VERSION="0.3.5"
-EXT_XDEBUG_VERSION="3.3.2"
+EXT_XDEBUG_VERSION="3.5.0"
 EXT_IGBINARY_VERSION="3.2.16"
-EXT_CRYPTO_VERSION="abbe7cbf869f96e69f2ce897271a61d32f43c7c0" #release not tagged
+EXT_CRYPTO_VERSION="999b3c7edbc7f8ca4fdeb0bb4bbae488ad0daf07" #release not tagged
 EXT_SNAPPY_VERSION="ab8b2b7375641f47deb21d8e8ba1a00ea5364cf6"
 EXT_RECURSIONGUARD_VERSION="0.1.0"
 EXT_LIBDEFLATE_VERSION="0.2.1"
 EXT_MORTON_VERSION="0.1.2"
 EXT_XXHASH_VERSION="0.2.0"
-EXT_ARRAYDEBUG_VERSION="0.2.0"
-EXT_ENCODING_VERSION="0.4.0"
-EXT_RDKAFKA_VERSION="6.0.3"
+EXT_ARRAYDEBUG_VERSION="0.2.1"
+EXT_ENCODING_VERSION="1.0.0"
+
 EXT_ZSTD_VERSION="0.14.0"
 EXT_GRPC_VERSION="1.57.3"
 EXT_VANILLAGENERATOR_VERSION="abd059fd2ca79888aab3b9c5070d83ceea55fada"
@@ -800,55 +802,6 @@ function build_grpc {
 	fi
 }
 
-function build_kafka {
-	if [ "$LDORIGIN_MODIFY" != "no" ]; then
-		LDFLAGS="-Wl,-rpath='\$ORIGIN/../lib' -Wl,-rpath-link='\$ORIGIN/../lib'";
-	fi
-
-	write_library librdkafka "$LIBRDKAFKA_VER"
-	local librdkafka_dir="./librdkafka-$LIBRDKAFKA_VER"
-
-	if cant_use_cache "$librdkafka_dir"; then
-		rm -rf "$librdkafka_dir"
-		write_download
-		download_file "https://github.com/confluentinc/librdkafka/archive/v$LIBRDKAFKA_VER.tar.gz" "librdkafka" | tar -zx >> "$DIR/install.log" 2>&1
-		pushd "$librdkafka_dir" >> "$DIR/install.log" 2>&1
-		echo -n " checking..."
-
-		if [ "$DO_STATIC" != "yes" ]; then
-			local EXTRA_FLAGS="-DBUILD_SHARED_LIBS=ON"
-		else
-			local EXTRA_FLAGS=""
-		fi
-
-		cmake . \
-			-DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
-			-DCMAKE_PREFIX_PATH="$INSTALL_DIR" \
-			-DCMAKE_INSTALL_LIBDIR=lib \
-			-DWITH_ZSTD=ON \
-			-DWITH_SSL=ON \
-			-DWITH_CURL=OFF \
-			-DENABLE_LZ4_EXT=OFF \
-			-DCMAKE_BUILD_TYPE=Release \
-			$CMAKE_GLOBAL_EXTRA_FLAGS \
-			$EXTRA_FLAGS \
-			>> "$DIR/install.log" 2>&1
-
-		echo -n " compiling..."
-		make -j $THREADS >> "$DIR/install.log" 2>&1 && mark_cache
-	else
-		write_caching
-		pushd "$librdkafka_dir" >> "$DIR/install.log" 2>&1
-	fi
-	write_install
-	make install >> "$DIR/install.log" 2>&1
-	popd >> "$DIR/install.log" 2>&1
-	write_done
-	if [ "$LDORIGIN_MODIFY" != "no" ]; then
-		LDFLAGS="-Wl,-rpath='\$\$ORIGIN/../lib' -Wl,-rpath-link='\$\$ORIGIN/../lib'";
-	fi
-}
-
 function build_zlib {
 	if [ "$DO_STATIC" == "yes" ]; then
 		local EXTRA_FLAGS="--static"
@@ -1351,7 +1304,6 @@ build_openssl
 build_curl
 build_sasl2
 build_zstd
-build_kafka
 build_grpc
 build_yaml
 build_leveldb
@@ -1445,99 +1397,7 @@ get_github_extension "grpc" "$EXT_GRPC_VERSION" "larryTheCoder" "php-grpc"
 
 get_github_extension "vanillagenerator" "$EXT_VANILLAGENERATOR_VERSION" "NetherGamesMC" "ext-vanillagenerator"
 
-get_github_extension "rdkafka" "$EXT_RDKAFKA_VERSION" "arnaud-lb" "php-rdkafka"
-
 get_github_extension "zstd" "$EXT_ZSTD_VERSION" "kjdev" "php-ext-zstd"
-
-if [ "$(uname -s)" == "Darwin" ]; then
-	echo "[rdkafka] Implementing quick patch for MacOS support."
-
-	rm $BUILD_DIR/php/ext/rdkafka/config.m4 2>&1
-
-	echo 'PHP_ARG_WITH(rdkafka, for rdkafka support,' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '[  --with-rdkafka             Include rdkafka support])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo 'if test "$PHP_RDKAFKA" != "no"; then' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  SEARCH_PATH="/usr/local /usr"     # you might want to change this' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  SEARCH_FOR="/include/librdkafka/rdkafka.h"  # you most likely want to change this' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  if test -r $PHP_RDKAFKA/$SEARCH_FOR; then # path given as parameter' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    RDKAFKA_DIR=$PHP_RDKAFKA' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  else # search default path list' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_MSG_CHECKING([for librdkafka/rdkafka.h" in default path])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    for i in $SEARCH_PATH ; do' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '      if test -r $i/$SEARCH_FOR; then' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '        RDKAFKA_DIR=$i' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '        AC_MSG_RESULT(found in $i)' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '      fi' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    done' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  fi' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  if test -z "$RDKAFKA_DIR"; then' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_MSG_RESULT([not found])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_MSG_ERROR([Please reinstall the rdkafka distribution])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  fi' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  PHP_ADD_INCLUDE($RDKAFKA_DIR/include)' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  SOURCES="rdkafka.c metadata.c metadata_broker.c metadata_topic.c metadata_partition.c metadata_collection.c conf.c topic.c queue.c message.c fun.c kafka_consumer.c topic_partition.c"' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  LIBNAME=rdkafka' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  LIBSYMBOL=rd_kafka_new' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  PHP_CHECK_LIBRARY($LIBNAME,$LIBSYMBOL,' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  [' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    PHP_ADD_LIBRARY_WITH_PATH($LIBNAME, $RDKAFKA_DIR/$PHP_LIBDIR, RDKAFKA_SHARED_LIBADD)' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_DEFINE(HAVE_RDKAFKALIB,1,[ ])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ],[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_MSG_ERROR([wrong rdkafka lib version or lib not found])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ],[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    -L$RDKAFKA_DIR/$PHP_LIBDIR -lm' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ORIG_LDFLAGS="$LDFLAGS"' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ORIG_CPPFLAGS="$CPPFLAGS"' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  LDFLAGS="-L$RDKAFKA_DIR/$PHP_LIBDIR -lm"' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  CPPFLAGS="-I$RDKAFKA_DIR/include"' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  AC_MSG_CHECKING([for librdkafka version])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  AC_EGREP_CPP(yes,[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '#include <librdkafka/rdkafka.h>' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '#if RD_KAFKA_VERSION >= 0x000b0000' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  yes' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '#endif' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ],[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_MSG_RESULT([>= 0.11.0])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ],[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_MSG_ERROR([librdkafka version 0.11.0 or greater required.])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  AC_CHECK_LIB($LIBNAME,[rd_kafka_message_headers],[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_DEFINE(HAVE_RD_KAFKA_MESSAGE_HEADERS,1,[ ])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ],[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_MSG_WARN([no rd_kafka_message_headers, headers support will not be available])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  AC_CHECK_LIB($LIBNAME,[rd_kafka_purge],[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_DEFINE(HAS_RD_KAFKA_PURGE,1,[ ])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ],[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_MSG_WARN([purge is not available])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  AC_CHECK_LIB($LIBNAME,[rd_kafka_msg_partitioner_murmur2],[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_DEFINE(HAS_RD_KAFKA_PARTITIONER_MURMUR2,1,[ ])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ],[' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '    AC_MSG_WARN([murmur2 partitioner is not available])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  ])' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  LDFLAGS="$ORIG_LDFLAGS"' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  CPPFLAGS="$ORIG_CPPFLAGS"' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  PHP_SUBST(RDKAFKA_SHARED_LIBADD)' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo '  PHP_NEW_EXTENSION(rdkafka, $SOURCES, $ext_shared)' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-	echo 'fi' >> "$BUILD_DIR/php/ext/rdkafka/config.m4" 2>&1
-fi
 
 write_library "PHP" "$PHP_VERSION"
 
@@ -1621,7 +1481,6 @@ RANLIB=$RANLIB CFLAGS="$CFLAGS $FLAGS_LTO" CXXFLAGS="$CXXFLAGS $FLAGS_LTO" LDFLA
 $HAS_LIBJPEG \
 $HAS_GD \
 $HAS_FFI \
---with-rdkafka="$INSTALL_DIR" \
 --with-leveldb="$INSTALL_DIR" \
 --with-snappy-includedir="$INSTALL_DIR" \
 --without-readline \
