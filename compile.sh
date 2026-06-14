@@ -1239,7 +1239,6 @@ function build_sqlite3 {
 		LDFLAGS="$LDFLAGS -L${INSTALL_DIR}/lib" CPPFLAGS="$CPPFLAGS -I${INSTALL_DIR}/include" RANLIB=$RANLIB ./configure \
 		--prefix="$INSTALL_DIR" \
 		--disable-dependency-tracking \
-		--enable-static-shell=no \
 		$EXTRA_FLAGS \
 		$CONFIGURE_FLAGS >> "$DIR/install.log" 2>&1
 		write_compile
