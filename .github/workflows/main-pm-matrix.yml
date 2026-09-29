@@ -46,7 +46,6 @@ jobs:
         with:
           path: ./download_cache
           key: compile-sh-cache-ssl-https-${{ hashFiles('./compile.sh') }}
-          restore-keys: compile-sh-cache-ssl-https-
 
       - name: Compile PHP
         run: |
