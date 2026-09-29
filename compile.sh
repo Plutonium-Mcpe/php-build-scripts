@@ -413,17 +413,21 @@ function git_download_file {
       tar xzf "$DOWNLOAD_CACHE/$cached_filename" $git_path >> "$DIR/install.log" 2>&1
     else
       echo "Downloading git repository to cache: $url" >> "$DIR/install.log"
-      git clone -b "$git_branch" --depth=1 $url $git_path >> "$DIR/install.log" 2>&1
+      #maintenance.auto=false stops git repacking the clone in the background; it would rewrite
+      #.git while tar is reading it, and tar exits 1 on "file changed as we read it"
+      git -c maintenance.auto=false clone -b "$git_branch" --depth=1 $url $git_path >> "$DIR/install.log" 2>&1
       pushd $git_path >> "$DIR/install.log" 2>&1
-      git submodule update --depth=1 --init >> "$DIR/install.log" 2>&1
+      git -c maintenance.auto=false submodule update --depth=1 --init >> "$DIR/install.log" 2>&1
       popd >> "$DIR/install.log" 2>&1
-      tar czf "$DOWNLOAD_CACHE/$cached_filename" $git_path >> "$DIR/install.log" 2>&1
+      #the build only needs the working tree, so leaving .git out of the cache avoids the race
+      #entirely and keeps the archive small
+      tar --exclude='.git' -czf "$DOWNLOAD_CACHE/$cached_filename" $git_path >> "$DIR/install.log" 2>&1
     fi
   else
     echo "Downloading non-cached git repository: $url" >> "$DIR/install.log"
-    git clone -b "$git_branch" --depth=1 $url $git_path >> "$DIR/install.log" 2>&1
+    git -c maintenance.auto=false clone -b "$git_branch" --depth=1 $url $git_path >> "$DIR/install.log" 2>&1
     pushd $git_path >> "$DIR/install.log" 2>&1
-    git submodule update --depth=1 --init >> "$DIR/install.log" 2>&1
+    git -c maintenance.auto=false submodule update --depth=1 --init >> "$DIR/install.log" 2>&1
     popd >> "$DIR/install.log" 2>&1
   fi
 }
