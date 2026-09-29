@@ -30,7 +30,7 @@ SASL2_VERSION="2.1.28"
 EXT_PMMPTHREAD_VERSION="de0d03b6ffecb1a03c06bb47912c2257c0b02b65"
 EXT_YAML_VERSION="2.3.0"
 EXT_LEVELDB_VERSION="88071eb1b1eae96af043229104b9d813f7cbe40c" #release not tagged
-EXT_CHUNKUTILS2_VERSION="0.3.5"
+EXT_CHUNKUTILS2_VERSION="59ab3bb435a215b6dcd4f3f6dde41610d905c073" #fork Cl1ient, release not tagged
 EXT_XDEBUG_VERSION="3.5.0"
 EXT_IGBINARY_VERSION="3.2.16"
 EXT_CRYPTO_VERSION="999b3c7edbc7f8ca4fdeb0bb4bbae488ad0daf07" #release not tagged
@@ -1461,7 +1461,7 @@ get_github_extension "snappy" "$EXT_SNAPPY_VERSION" "kjdev" "php-ext-snappy"
 
 get_github_extension "leveldb" "$EXT_LEVELDB_VERSION" "pmmp" "php-leveldb"
 
-get_github_extension "chunkutils2" "$EXT_CHUNKUTILS2_VERSION" "pmmp" "ext-chunkutils2"
+get_github_extension "chunkutils2" "$EXT_CHUNKUTILS2_VERSION" "Cl1ient" "ext-chunkutils"
 
 get_github_extension "libdeflate" "$EXT_LIBDEFLATE_VERSION" "pmmp" "ext-libdeflate"
 
