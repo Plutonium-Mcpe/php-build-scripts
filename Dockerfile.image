@@ -14,8 +14,8 @@ COPY compile.sh ./
 ARG THREADS=4
 ARG PHP_VERSION_BASE=8.4
 RUN ./compile.sh -t linux64 -j ${THREADS} -g -F -P 5 -w 4096 -D -z ${PHP_VERSION_BASE} || (tail -n 80 install.log; exit 1)
-RUN ./bin/php7/bin/php -r 'foreach(["chunkutils2", "encoding", "igbinary", "leveldb", "morton", "pmmpthread", "yaml", "zlib", "FFI"] as $e){ if(!extension_loaded($e)){ fwrite(STDERR, "extension manquante : $e\n"); exit(1); } } echo "PHP ", PHP_VERSION, ", chunkutils2 ", phpversion("chunkutils2"), "\n";'
+RUN ./bin/php7/bin/php -r 'foreach(["chunkutils2", "datachannel", "encoding", "igbinary", "leveldb", "morton", "netqueue", "pmmpthread", "yaml", "zlib", "FFI"] as $e){ if(!extension_loaded($e)){ fwrite(STDERR, "extension manquante : $e\n"); exit(1); } } echo "PHP ", PHP_VERSION, ", chunkutils2 ", phpversion("chunkutils2"), "\n";'
 
 FROM ubuntu:22.04
 COPY --from=build /build/bin /build/bin
-RUN /build/bin/php7/bin/php -r 'echo "PHP ", PHP_VERSION, ", curl ", curl_version()["version"], "\n";'
+RUN /build/bin/php7/bin/php -r 'echo "PHP ", PHP_VERSION, ", curl ", curl_version()["version"], "\n"; new altay\netqueue\PacketQueue(); new altay\datachannel\Context();'

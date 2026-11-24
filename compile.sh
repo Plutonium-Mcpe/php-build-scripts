@@ -18,6 +18,7 @@ OPENSSL_VERSION="3.6.0"
 LIBZIP_VERSION="1.11.4"
 SQLITE3_VERSION="3510100" #3.51.1
 LIBDEFLATE_VERSION="c8c56a20f8f621e6a966b716b31f1dedab6a41e3" #1.25 - see above note about "v" prefixes
+LIBDATACHANNEL_VERSION="47f2fa11b9ea9d59da3c860bfac4b16574ee2ec9" #fork opencollab-incubator, celui que ext-datachannel epingle
 
 LIBZSTD_VER="1.5.6"
 LIBGRPC_VER="1.58.1"
@@ -38,6 +39,8 @@ EXT_MORTON_VERSION="0.1.2"
 EXT_XXHASH_VERSION="0.2.0"
 EXT_ARRAYDEBUG_VERSION="0.2.1"
 EXT_ENCODING_VERSION="1.0.0"
+EXT_NETQUEUE_VERSION="5b34236d011af35aadaef90d3ead50460972bb28" #0.1.0, pas encore de tag
+EXT_DATACHANNEL_VERSION="0.1.1"
 
 EXT_ZSTD_VERSION="0.14.0"
 EXT_GRPC_VERSION="1.57.3"
@@ -1297,6 +1300,49 @@ function build_libdeflate {
 
 cd "$LIB_BUILD_DIR"
 
+function build_libdatachannel {
+	write_library libdatachannel "$LIBDATACHANNEL_VERSION"
+	local libdatachannel_dir="./libdatachannel-$LIBDATACHANNEL_VERSION"
+
+	if cant_use_cache "$libdatachannel_dir"; then
+		rm -rf "$libdatachannel_dir"
+		write_download
+		#les archives de GitHub n'ont pas les sous-modules, et libdatachannel en compile quatre
+		git init -q "$libdatachannel_dir" >> "$DIR/install.log" 2>&1
+		cd "$libdatachannel_dir"
+		git remote add origin "https://github.com/opencollab-incubator/libdatachannel.git" >> "$DIR/install.log" 2>&1
+		git fetch -q --depth 1 origin "$LIBDATACHANNEL_VERSION" >> "$DIR/install.log" 2>&1
+		git checkout -q FETCH_HEAD >> "$DIR/install.log" 2>&1
+		git submodule update -q --init --recursive --depth 1 deps/libjuice deps/usrsctp deps/plog deps/json >> "$DIR/install.log" 2>&1
+		write_configure
+		#toujours statique : ext-datachannel lie les archives. OpenSSL est celui compile plus haut
+		cmake . \
+			-DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
+			-DCMAKE_PREFIX_PATH="$INSTALL_DIR" \
+			-DCMAKE_INSTALL_LIBDIR=lib \
+			$CMAKE_GLOBAL_EXTRA_FLAGS \
+			-DCMAKE_BUILD_TYPE=Release \
+			-DBUILD_SHARED_LIBS=OFF \
+			-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+			-DOPENSSL_ROOT_DIR="$INSTALL_DIR" \
+			-DNO_MEDIA=ON \
+			-DNO_WEBSOCKET=ON \
+			-DNO_EXAMPLES=ON \
+			-DNO_TESTS=ON \
+			-DUSE_NICE=OFF \
+			-DUSE_NETTLE=OFF >> "$DIR/install.log" 2>&1
+		write_compile
+		make -j $THREADS >> "$DIR/install.log" 2>&1 && mark_cache
+	else
+		write_caching
+		cd "$libdatachannel_dir"
+	fi
+	write_install
+	make install >> "$DIR/install.log" 2>&1
+	cd ..
+	write_done
+}
+
 build_snappy
 build_zlib
 build_gmp
@@ -1327,6 +1373,7 @@ build_libxml2
 build_libzip
 build_sqlite3
 build_libdeflate
+build_libdatachannel
 
 # PECL libraries
 
@@ -1392,6 +1439,10 @@ get_github_extension "xxhash" "$EXT_XXHASH_VERSION" "pmmp" "ext-xxhash"
 get_github_extension "arraydebug" "$EXT_ARRAYDEBUG_VERSION" "pmmp" "ext-arraydebug"
 
 get_github_extension "encoding" "$EXT_ENCODING_VERSION" "pmmp" "ext-encoding"
+
+get_github_extension "netqueue" "$EXT_NETQUEUE_VERSION" "Plutonium-Mcpe" "ext-netqueue"
+
+get_github_extension "datachannel" "$EXT_DATACHANNEL_VERSION" "Plutonium-Mcpe" "ext-datachannel"
 
 get_github_extension "grpc" "$EXT_GRPC_VERSION" "larryTheCoder" "php-grpc"
 
@@ -1533,6 +1584,8 @@ $HAVE_MYSQLI \
 --enable-xxhash \
 --enable-arraydebug \
 --enable-encoding \
+--enable-netqueue \
+--with-datachannel="$INSTALL_DIR" \
 $HAVE_VALGRIND \
 $CONFIGURE_FLAGS >> "$DIR/install.log" 2>&1
 write_compile
