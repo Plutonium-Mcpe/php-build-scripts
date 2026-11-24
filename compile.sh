@@ -954,6 +954,7 @@ function build_curl {
 		--disable-ldaps \
 		--without-libidn \
 		--without-libidn2 \
+		--without-libpsl \
 		--without-brotli \
 		--without-nghttp2 \
 		--without-zstd \

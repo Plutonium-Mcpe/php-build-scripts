@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
     make autoconf automake m4 gzip bzip2 bison g++ git cmake pkg-config re2c wget curl ca-certificates \
-    libtool libtool-bin libffi-dev libpsl-dev libc-bin xz-utils patch
+    libtool libtool-bin libffi-dev libc-bin xz-utils patch
 
 WORKDIR /build
 COPY compile.sh ./
@@ -18,3 +18,4 @@ RUN ./bin/php7/bin/php -r 'foreach(["chunkutils2", "encoding", "igbinary", "leve
 
 FROM ubuntu:22.04
 COPY --from=build /build/bin /build/bin
+RUN /build/bin/php7/bin/php -r 'echo "PHP ", PHP_VERSION, ", curl ", curl_version()["version"], "\n";'
