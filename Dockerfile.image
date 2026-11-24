@@ -18,4 +18,5 @@ RUN ./bin/php7/bin/php -r 'foreach(["chunkutils2", "datachannel", "encoding", "i
 
 FROM ubuntu:22.04
 COPY --from=build /build/bin /build/bin
-RUN /build/bin/php7/bin/php -r 'echo "PHP ", PHP_VERSION, ", curl ", curl_version()["version"], "\n"; new altay\netqueue\PacketQueue(); new altay\datachannel\Context();'
+RUN sed -i "s{^extension_dir=.*{extension_dir=\"$(find /build/bin/php7 -type d -name '*debug-zts*')\"{" /build/bin/php7/bin/php.ini
+RUN /build/bin/php7/bin/php -r 'if(!extension_loaded("Zend OPcache")){ fwrite(STDERR, "opcache absent\n"); exit(1); } echo "PHP ", PHP_VERSION, ", curl ", curl_version()["version"], "\n"; new altay\netqueue\PacketQueue(); new altay\datachannel\Context();'
